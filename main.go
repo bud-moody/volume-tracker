@@ -4,31 +4,24 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"github.com/gorilla/mux"
 	"database/sql"
+	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type Set struct {
-	Weight int `json:"weight"`
-	Reps   int `json:"reps"`
-}
-
-type Workout struct {
-	ID       int    `json:"id"`
-	Date     string `json:"date"`
-	Exercise string `json:"exercise"`
-	Sets     []Set  `json:"sets"`
-}
-
 var db *sql.DB
 
+// Updated initDB to clear existing data during initialization
 func initDB() {
 	var err error
-	db, err = sql.Open("sqlite3", "./workouts.db")
+	db, err = sql.Open("sqlite3", "workouts.db")
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Clear existing data
+	db.Exec("DROP TABLE IF EXISTS sets")
+	db.Exec("DROP TABLE IF EXISTS workouts")
 
 	createTableQuery := `CREATE TABLE IF NOT EXISTS workouts (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,6 +39,18 @@ func initDB() {
 	if _, err := db.Exec(createTableQuery); err != nil {
 		log.Fatal(err)
 	}
+}
+
+type Set struct {
+	Weight int `json:"weight"`
+	Reps   int `json:"reps"`
+}
+
+type Workout struct {
+	ID       int    `json:"id"`
+	Date     string `json:"date"`
+	Exercise string `json:"exercise"`
+	Sets     []Set  `json:"sets"`
 }
 
 func createWorkoutHandler(w http.ResponseWriter, r *http.Request) {
