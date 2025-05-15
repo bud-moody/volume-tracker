@@ -1,43 +1,53 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
-	"database/sql"
+
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *sql.DB
 
-// Updated initDB to clear existing data during initialization
-func initDB() {
-	var err error
-	db, err = sql.Open("sqlite3", "workouts.db")
+func openDB(fileName string) (*sql.DB, error)  {
+	db, err := sql.Open("sqlite3", fileName)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
+	}
+	return db, nil
+}
+
+func createTablesIfNotPresent(db *sql.DB) error {
+	createTablesQuery := `
+		CREATE TABLE IF NOT EXISTS workouts (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			date TEXT,
+			exercise TEXT
+		);
+		CREATE TABLE IF NOT EXISTS sets (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			workout_id INTEGER,
+			weight INTEGER,
+			reps INTEGER,
+			FOREIGN KEY(workout_id) REFERENCES workouts(id)
+		);
+	`
+	_, err := db.Exec(createTablesQuery)
+	return err
+}
+
+func initDB(dbName string) {
+	var err error
+	db, err = openDB(dbName)
+	if err != nil {
+		log.Fatal("Failed to open database:", err)
 	}
 
-	// Clear existing data
-	db.Exec("DROP TABLE IF EXISTS sets")
-	db.Exec("DROP TABLE IF EXISTS workouts")
-
-	createTableQuery := `CREATE TABLE IF NOT EXISTS workouts (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		date TEXT,
-		exercise TEXT
-	);
-		CREATE TABLE IF NOT EXISTS sets (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		workout_id INTEGER,
-		weight INTEGER,
-		reps INTEGER,
-		FOREIGN KEY(workout_id) REFERENCES workouts(id)
-	);`
-
-	if _, err := db.Exec(createTableQuery); err != nil {
-		log.Fatal(err)
+	if err := createTablesIfNotPresent(db); err != nil {
+		log.Fatal("Failed to create tables:", err)
 	}
 }
 
@@ -118,7 +128,7 @@ func getWorkoutsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	initDB()
+	initDB("workouts.db")
 	defer db.Close()
 
 	r := mux.NewRouter()
