@@ -1,21 +1,16 @@
 const API_URL = "http://localhost:8080/workouts";
 
 // Render the chart
-function renderChart(data) {
-  const ctx = document.getElementById("volume-chart").getContext("2d");
-
-  // Destroy the previous chart instance if it exists
-  if (window.volumeChart) {
-    window.volumeChart.destroy();
-  }
+function renderChart(data, exercise) {
+  const ctx = document.getElementById(`chart-${exercise}`).getContext("2d");
 
   // Create a new chart
-  window.volumeChart = new Chart(ctx, {
+  new Chart(ctx, {
     type: "line",
     data: {
       labels: data.labels, // Dates
       datasets: [{
-        label: "Workout Volume",
+        label: `Workout Volume for ${exercise}`,
         data: data.volumes, // Volumes
         borderColor: "blue",
         backgroundColor: "rgba(0, 0, 255, 0.1)",
@@ -54,11 +49,7 @@ async function fetchWorkouts() {
     tableBody.innerHTML = ""; // Clear existing rows
 
     // Prepare data for the chart
-    const chartData = {
-      labels: [], // Dates
-      volumes: [] // Workout volumes
-    };
-
+    const groupedData = {};
     workouts.forEach(workout => {
       const volume = workout.sets.reduce((sum, set) => sum + set.weight * set.reps, 0);
       const row = `
@@ -70,17 +61,36 @@ async function fetchWorkouts() {
       `;
       tableBody.innerHTML += row;
 
-      // Add data to chart
-      chartData.labels.push(workout.date);
-      chartData.volumes.push(volume);
+      if (!groupedData[workout.exercise]) {
+        groupedData[workout.exercise] = { labels: [], volumes: [] };
+      }
+      groupedData[workout.exercise].labels.push(workout.date);
+      groupedData[workout.exercise].volumes.push(volume);
     });
 
-    // Reverse the order of labels and volumes to ensure time moves from left to right
-    chartData.labels.reverse();
-    chartData.volumes.reverse();
+    // Find the full range of dates for alignment
+    const allDates = Object.values(groupedData).flatMap(data => data.labels);
+    const uniqueDates = Array.from(new Set(allDates)).sort();
 
-    // Render the chart
-    renderChart(chartData);
+    // Render a chart for each exercise
+    const chartContainer = document.getElementById("visualization-section");
+    chartContainer.innerHTML = ""; // Clear existing charts
+
+    Object.entries(groupedData).forEach(([exercise, data]) => {
+      // Align the data with the full range of dates
+      const alignedVolumes = uniqueDates.map(date => {
+        const index = data.labels.indexOf(date);
+        return index !== -1 ? data.volumes[index] : 0;
+      });
+
+      // Create a canvas for the chart
+      const canvas = document.createElement("canvas");
+      canvas.id = `chart-${exercise}`;
+      chartContainer.appendChild(canvas);
+
+      // Render the chart
+      renderChart({ labels: uniqueDates, volumes: alignedVolumes }, exercise);
+    });
   } catch (error) {
     console.error("Error fetching workouts:", error);
   }
