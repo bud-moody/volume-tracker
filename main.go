@@ -4,15 +4,18 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
+	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *sql.DB
+var logger *slog.Logger
 
-func openDB(fileName string) (*sql.DB, error)  {
+func openDB(fileName string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", fileName)
 	if err != nil {
 		return nil, err
@@ -51,6 +54,10 @@ func initDB(dbName string) {
 	}
 }
 
+func initLogger() {
+	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
+}
+
 type Set struct {
 	Weight int `json:"weight"`
 	Reps   int `json:"reps"`
@@ -64,6 +71,8 @@ type Workout struct {
 }
 
 func createWorkoutHandler(w http.ResponseWriter, r *http.Request) {
+	logger.Info("Received request", slog.String("method", r.Method), slog.String("path", r.URL.Path))
+
 	var workout Workout
 	if err := json.NewDecoder(r.Body).Decode(&workout); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -89,6 +98,8 @@ func createWorkoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getWorkoutsHandler(w http.ResponseWriter, r *http.Request) {
+	logger.Info("Received request", slog.String("method", r.Method), slog.String("path", r.URL.Path))
+
 	rows, err := db.Query("SELECT id, date, exercise FROM workouts")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -127,7 +138,23 @@ func getWorkoutsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(workouts)
 }
 
+func enableCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8000")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
+	initLogger()
+	logger.Info("Starting server", slog.String("port", "8080"))
+
 	initDB("workouts.db")
 	defer db.Close()
 
@@ -135,6 +162,9 @@ func main() {
 	r.HandleFunc("/workouts", createWorkoutHandler).Methods("POST")
 	r.HandleFunc("/workouts", getWorkoutsHandler).Methods("GET")
 
+	// Wrap the router with the CORS middleware
+	http.Handle("/", enableCORS(r))
+
 	log.Println("Server is running on port 8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }

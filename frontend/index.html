@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Volume Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Workout Volume Tracker</h1>
+  <section id="form-section">
+    <h2>Add Workout</h2>
+    <form id="workout-form">
+      <label for="date">Date:</label>
+      <input type="date" id="date" name="date" required>
+      <label for="exercise">Exercise:</label>
+      <input type="text" id="exercise" name="exercise" required>
+      <div id="sets-container">
+        <h3>Sets</h3>
+        <button type="button" id="add-set">Add Set</button>
+      </div>
+      <button type="submit">Submit Workout</button>
+    </form>
+  </section>
+  <section id="workouts-section">
+    <h2>Workouts</h2>
+    <table id="workouts-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Exercise</th>
+          <th>Volume</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+  <section id="visualization-section">
+    <h2>Workout Volume Over Time</h2>
+    <canvas id="volume-chart"></canvas>
+  </section>
+  <script src="script.js"></script>
+</body>
+</html>

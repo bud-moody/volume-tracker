@@ -23,6 +23,7 @@ func clearTableData(db *sql.DB) error {
 
 
 func TestCreateWorkoutHandler(t *testing.T) {
+	initLogger()
 	initDB("workouts_test.db") 
 	clearTableData(db) 
 	defer db.Close()
