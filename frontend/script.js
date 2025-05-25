@@ -1,23 +1,85 @@
 const API_URL = "http://localhost:8080/workouts";
 
+// Render the chart
+function renderChart(data) {
+  const ctx = document.getElementById("volume-chart").getContext("2d");
+
+  // Destroy the previous chart instance if it exists
+  if (window.volumeChart) {
+    window.volumeChart.destroy();
+  }
+
+  // Create a new chart
+  window.volumeChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: data.labels, // Dates
+      datasets: [{
+        label: "Workout Volume",
+        data: data.volumes, // Volumes
+        borderColor: "blue",
+        backgroundColor: "rgba(0, 0, 255, 0.1)",
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: "Date"
+          }
+        },
+        y: {
+          title: {
+            display: true,
+            text: "Volume"
+          }
+        }
+      }
+    }
+  });
+}
+
 // Fetch and display workouts
 async function fetchWorkouts() {
-  const response = await fetch(API_URL);
-  const workouts = await response.json();
-  const tableBody = document.querySelector("#workouts-table tbody");
-  tableBody.innerHTML = ""; // Clear existing rows
+  try {
+    const response = await fetch(API_URL);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch workouts: ${response.statusText}`);
+    }
+    const workouts = await response.json();
+    const tableBody = document.querySelector("#workouts-table tbody");
+    tableBody.innerHTML = ""; // Clear existing rows
 
-  workouts.forEach(workout => {
-    const volume = workout.sets.reduce((sum, set) => sum + set.weight * set.reps, 0);
-    const row = `
-      <tr>
-        <td>${workout.date}</td>
-        <td>${workout.exercise}</td>
-        <td>${volume}</td>
-      </tr>
-    `;
-    tableBody.innerHTML += row;
-  });
+    // Prepare data for the chart
+    const chartData = {
+      labels: [], // Dates
+      volumes: [] // Workout volumes
+    };
+
+    workouts.forEach(workout => {
+      const volume = workout.sets.reduce((sum, set) => sum + set.weight * set.reps, 0);
+      const row = `
+        <tr>
+          <td>${workout.date}</td>
+          <td>${workout.exercise}</td>
+          <td>${volume}</td>
+        </tr>
+      `;
+      tableBody.innerHTML += row;
+
+      // Add data to chart
+      chartData.labels.push(workout.date);
+      chartData.volumes.push(volume);
+    });
+
+    // Render the chart
+    renderChart(chartData);
+  } catch (error) {
+    console.error("Error fetching workouts:", error);
+  }
 }
 
 // Submit new workout
