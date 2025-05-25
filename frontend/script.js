@@ -75,6 +75,10 @@ async function fetchWorkouts() {
       chartData.volumes.push(volume);
     });
 
+    // Reverse the order of labels and volumes to ensure time moves from left to right
+    chartData.labels.reverse();
+    chartData.volumes.reverse();
+
     // Render the chart
     renderChart(chartData);
   } catch (error) {
