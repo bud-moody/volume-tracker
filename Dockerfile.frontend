@@ -1,0 +1,9 @@
+# syntax=docker/dockerfile:1
+
+FROM nginx:alpine
+WORKDIR /usr/share/nginx/html
+COPY frontend/index.html ./
+COPY frontend/styles.css ./
+COPY frontend/script.js ./
+# Chart.js is loaded via CDN in index.html, so no need to copy
+EXPOSE 80

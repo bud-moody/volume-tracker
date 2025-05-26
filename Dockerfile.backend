@@ -1,0 +1,19 @@
+# syntax=docker/dockerfile:1
+
+# --- Backend (Go) ---
+FROM golang:1.24.3-alpine AS builder
+WORKDIR /app
+# Install build tools for CGO/SQLite
+RUN apk add --no-cache build-base
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=1 go build -o server main.go
+
+FROM alpine:latest
+WORKDIR /app
+COPY --from=builder /app/server ./server
+COPY --from=builder /app/workouts.db ./workouts.db
+EXPOSE 8080
+VOLUME ["/app/data"]
+CMD ["./server"]
