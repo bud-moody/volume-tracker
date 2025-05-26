@@ -32,3 +32,15 @@ table th, table td {
   max-width: 800px;
   margin: 0 auto;
 }
+
+.set {
+  display: flex;
+  gap: 1em;
+  margin-bottom: 0.5em;
+}
+
+.set-field {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+}

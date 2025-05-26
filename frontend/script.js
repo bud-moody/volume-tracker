@@ -127,10 +127,14 @@ document.querySelector("#add-set").addEventListener("click", () => {
   const setDiv = document.createElement("div");
   setDiv.classList.add("set");
   setDiv.innerHTML = `
-    <label>Weight:</label>
-    <input type="number" class="weight" required>
-    <label>Reps:</label>
-    <input type="number" class="reps" required>
+    <span class="set-field">
+      <label>Weight:</label>
+      <input type="number" class="weight" required>
+    </span>
+    <span class="set-field">
+      <label>Reps:</label>
+      <input type="number" class="reps" required>
+    </span>
   `;
   setsContainer.appendChild(setDiv);
 });
